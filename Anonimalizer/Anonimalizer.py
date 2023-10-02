@@ -1,12 +1,15 @@
 import re
+import time
 import pandas as pd
 import numpy as np
 from unidecode import unidecode
 import csv
 from collections import Counter
 
+start = time.time()
 nombres_ = list(pd.read_csv('Nombres Argentina.csv')['nombres'])
-apellidos_= list(pd.read_csv('apellidos_arg.csv')['0'])
+# apellidos_= list(pd.read_csv('apellidos_arg.csv')['0'])
+apellidos_= list(pd.read_csv('apellidos_cantidad_personas_provincia.csv', low_memory=False)['apellido'])
 # apellidos_ = list(set(list(AP['apellido'])))
 provincias_ = list(pd.read_csv('provincias.csv')['nombre'])
 municipios_ = list(pd.read_excel('localidades_bsas.xlsx')['Ciudad'])
@@ -14,17 +17,17 @@ municipios_ = list(pd.read_excel('localidades_bsas.xlsx')['Ciudad'])
 nombres =[]
 for nombre in nombres_:
 	nombres.append(unidecode(nombre, 'utf-8'))
-    
+	
 apellidos = []
 for apellido in apellidos_:
 	apellidos.append(unidecode(apellido, 'utf-8'))
-    
+	
 provincias = []
 prov_incias = []
 for provincia in provincias_:
 	provincias.append(unidecode(provincia, 'utf-8'))
 	prov_incias.append(re.sub('\s', '_', provincia, flags = re.I))
-    
+	
 municipios = []
 muni_cipios = []
 for municipio in municipios_:
@@ -50,11 +53,14 @@ def Anonimalizer(text, title):
 	text = re.sub('\d{2}/\d{2}/\d{4}', 'dd/mm/aaaa', text, flags = re.I)
 	text = re.sub('\d{2}:\d{2}:\d{4}', 'hh:mm:ss', text, flags = re.I)
 	text = re.sub('[a-z0-9.\-+_]+@[a-z0-9.\-+_]+\.[a-z]+', 'MAIL', text, flags = re.I)
+	text = re.sub('[A-Z]{2}\s*-\s*\d{5}\s*-\s*\d{4}', 'NUMERO_CAUSA', text, flags = re.I)
+	text = re.sub('(Prefijo="[A-Z]{2}"|Sufijo="\d{4}"|Numero="\d{5}")', 'NUMERO_CAUSA_PNS', text, flags = re.I)
+
 
 	
 	for i in range(len(provincias)):
 		text = re.sub(provincias[i], prov_incias[i], text, flags = re.I)
-        
+		
 	for i in range(len(municipios)):
 		text = re.sub(municipios[i], muni_cipios[i], text, flags = re.I)
 
@@ -68,7 +74,7 @@ def Anonimalizer(text, title):
 		if i in freq_apellidos.keys() and len(i)>2:
 			text = re.sub('\\b'+i+'\\b', 'APELLIDO', text, flags = re.I)
 			if i not in replacements:
-				replacements.append(i)	
+				replacements.append(i)  
 			
 	# replacements = list(set(replacements))
 	with open(title+'_anonimo.txt', 'w') as f:
@@ -82,3 +88,10 @@ def Anonimalizer(text, title):
    
 
 
+with open('cedulas_demandas.xml', 'r', encoding='utf-8', errors="ignore") as f:
+  data = f.read()
+  Anonimalizer(data, "anonimized")
+
+
+end = time.time()
+print(end - start)
